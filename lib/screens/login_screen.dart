@@ -70,14 +70,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _header() => Column(
     children: [
       Container(
-        width: 80,
-        height: 80,
+        width: 92,
+        height: 92,
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F5EE),
-          borderRadius: BorderRadius.circular(24),
+        child: Image.asset(
+          'assets/images/school_logo.png',
+          fit: BoxFit.contain,
         ),
-        child: const Icon(Icons.school_rounded, color: portalGreen, size: 48),
       ),
       const Text(
         'SD Muhammadiyah Tamantirto',

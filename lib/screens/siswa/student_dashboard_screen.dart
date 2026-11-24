@@ -180,11 +180,13 @@ class _StudentHeader extends StatelessWidget {
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(
-              color: _primary,
-              borderRadius: BorderRadius.circular(10),
+            alignment: Alignment.center,
+            child: Image.asset(
+              'assets/images/school_logo.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.contain,
             ),
-            child: const Icon(Icons.school, color: Colors.white, size: 21),
           ),
           const SizedBox(width: 10),
           const Expanded(
