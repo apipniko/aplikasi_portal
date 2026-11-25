@@ -374,8 +374,10 @@ class _GradeSubmissionScreenState extends State<GradeSubmissionScreen> {
       FilledButton.icon(
         onPressed: _scoreController.text.isEmpty
             ? null
-            : () =>
-                  _showSavedMessage(context, 'Nilai berhasil dikirim ke siswa'),
+            : () {
+                _showSavedMessage(context, 'Nilai berhasil dikirim ke siswa');
+                Navigator.pop(context);
+              },
         icon: const Icon(Icons.check_circle),
         label: const Text('Simpan & Kirim Nilai ke Siswa'),
         style: FilledButton.styleFrom(

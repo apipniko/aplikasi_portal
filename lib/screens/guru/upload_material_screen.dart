@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 const _green = Color(0xFF0D6E3F);
 const _ink = Color(0xFF111C2D);
@@ -12,7 +13,8 @@ class UploadMaterialScreen extends StatefulWidget {
 
 class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
   String subject = 'Kemuhammadiyahan';
-  int format = 0;
+  PlatformFile? selectedFile;
+  bool pickingFile = false;
   final subjectOptions = const [
     'Kemuhammadiyahan',
     'Pendidikan Agama Islam',
@@ -20,6 +22,46 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
     'Bahasa Indonesia',
     'IPAS',
   ];
+
+  Future<void> _pickMaterialFile() async {
+    setState(() => pickingFile = true);
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const [
+          'pdf',
+          'ppt',
+          'pptx',
+          'doc',
+          'docx',
+          'mp4',
+          'mp3',
+          'm4a',
+          'jpg',
+          'png',
+        ],
+      );
+      if (!mounted) return;
+      if (files.isEmpty) return;
+
+      final file = files.first;
+      final sizeInBytes = file.lengthSync() ?? await file.length() ?? 0;
+      if (!mounted) return;
+      if (sizeInBytes > 25 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ukuran berkas melebihi batas 25 MB.')),
+        );
+        return;
+      }
+      setState(() => selectedFile = file);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Berkas gagal dibuka: $error')));
+    } finally {
+      if (mounted) setState(() => pickingFile = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -208,54 +250,6 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Format / Tipe Dokumen',
-              style: TextStyle(
-                color: _ink,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 8),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 2.2,
-              children: [
-                _FormatButton(
-                  0,
-                  format,
-                  Icons.picture_as_pdf,
-                  'Buku / PDF',
-                  (value) => setState(() => format = value),
-                ),
-                _FormatButton(
-                  1,
-                  format,
-                  Icons.slideshow,
-                  'Slide PPTX',
-                  (value) => setState(() => format = value),
-                ),
-                _FormatButton(
-                  2,
-                  format,
-                  Icons.smart_display,
-                  'Video / Audio',
-                  (value) => setState(() => format = value),
-                ),
-                _FormatButton(
-                  3,
-                  format,
-                  Icons.link,
-                  'Tautan Web',
-                  (value) => setState(() => format = value),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
               'Petunjuk Belajar Murid',
               style: TextStyle(
                 color: _ink,
@@ -280,7 +274,7 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
           title: 'Unggah Berkas & Dokumen',
           children: [
             InkWell(
-              onTap: () {},
+              onTap: pickingFile ? null : _pickMaterialFile,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 width: double.infinity,
@@ -290,12 +284,21 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFD8E3FB)),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.cloud_upload_outlined, color: _green, size: 34),
+                    Icon(
+                      selectedFile == null
+                          ? Icons.cloud_upload_outlined
+                          : Icons.description_outlined,
+                      color: _green,
+                      size: 34,
+                    ),
                     SizedBox(height: 6),
                     Text(
-                      'Pilih Berkas Materi dari Ponsel',
+                      pickingFile
+                          ? 'Membuka pemilih berkas...'
+                          : '${selectedFile!.name} • ${selectedFile!.extension?.toUpperCase() ?? 'BERKAS'}',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: _ink,
                         fontWeight: FontWeight.w800,
@@ -314,10 +317,16 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: () {
+            if (selectedFile == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Pilih berkas materi terlebih dahulu.'),
+                ),
+              );
+              return;
+            }
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Materi berhasil disimpan sebagai draf'),
-              ),
+              const SnackBar(content: Text('Materi berhasil diterbitkan.')),
             );
           },
           icon: const Icon(Icons.cloud_done),
@@ -390,52 +399,4 @@ class _FormSection extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _FormatButton extends StatelessWidget {
-  const _FormatButton(
-    this.value,
-    this.selected,
-    this.icon,
-    this.label,
-    this.onSelected,
-  );
-  final int value, selected;
-  final IconData icon;
-  final String label;
-  final ValueChanged<int> onSelected;
-  @override
-  Widget build(BuildContext context) {
-    final active = value == selected;
-    return InkWell(
-      onTap: () => onSelected(value),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFE8F5EE) : const Color(0xFFF0F3FF),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: active ? _green : _muted, size: 20),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: active ? _green : _muted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            if (active) const Icon(Icons.check_circle, color: _green, size: 17),
-          ],
-        ),
-      ),
-    );
-  }
 }

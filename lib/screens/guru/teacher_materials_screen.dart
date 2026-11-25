@@ -17,6 +17,8 @@ class TeacherMaterialsScreen extends StatefulWidget {
 
 class _TeacherMaterialsScreenState extends State<TeacherMaterialsScreen> {
   bool showTasks = false;
+  String selectedSubject = 'Semua';
+  String selectedSubmissionStatus = 'Terkumpul';
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -118,22 +120,42 @@ class _TeacherMaterialsScreenState extends State<TeacherMaterialsScreen> {
         ),
       ),
       const SizedBox(height: 12),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _FilterChip('Semua', active: true),
-            const SizedBox(width: 6),
-            _FilterChip('Kemuhammadiyahan'),
-            const SizedBox(width: 6),
-            _FilterChip('Matematika'),
-            const SizedBox(width: 6),
-            _FilterChip('IPAS'),
-          ],
-        ),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          const subjects = [
+            'Semua',
+            'Kemuhammadiyahan',
+            'Matematika',
+            'IPAS',
+          ];
+          const spacing = 6.0;
+          final chipWidth = (constraints.maxWidth - spacing * 3) / 4;
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < subjects.length; i++) ...[
+                  if (i > 0) const SizedBox(width: spacing),
+                  SizedBox(
+                    width: chipWidth < 108 ? 108 : chipWidth,
+                    child: _FilterChip(
+                      subjects[i],
+                      active: selectedSubject == subjects[i],
+                      onTap: () => setState(
+                        () => selectedSubject = subjects[i],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
       const SizedBox(height: 12),
       if (!showTasks) ...[
+        if (selectedSubject == 'Semua' || selectedSubject == 'Kemuhammadiyahan')
         const _MaterialCard(
           subject: 'Kemuhammadiyahan',
           chapter: 'Bab 4',
@@ -143,6 +165,7 @@ class _TeacherMaterialsScreenState extends State<TeacherMaterialsScreen> {
           tone: Color(0xFFE8F5EE),
         ),
         const SizedBox(height: 10),
+        if (selectedSubject == 'Semua' || selectedSubject == 'IPAS')
         const _MaterialCard(
           subject: 'IPAS',
           chapter: 'Bab 5',
@@ -152,6 +175,7 @@ class _TeacherMaterialsScreenState extends State<TeacherMaterialsScreen> {
           tone: Color(0xFFE0F2FE),
         ),
         const SizedBox(height: 10),
+        if (selectedSubject == 'Semua' || selectedSubject == 'Matematika')
         const _MaterialCard(
           subject: 'Matematika',
           chapter: 'Tema 3',
@@ -161,21 +185,33 @@ class _TeacherMaterialsScreenState extends State<TeacherMaterialsScreen> {
           tone: Color(0xFFFEF3C7),
         ),
       ] else ...[
-        const _SubmissionMetrics(),
+        _SubmissionMetrics(
+          selectedStatus: selectedSubmissionStatus,
+          onStatusSelected: (status) =>
+              setState(() => selectedSubmissionStatus = status),
+        ),
         const SizedBox(height: 10),
+        if (selectedSubmissionStatus != 'Selesai' &&
+            (selectedSubject == 'Semua' ||
+                selectedSubject == 'Kemuhammadiyahan')) ...[
         const _SubmissionAssignmentCard(),
         const SizedBox(height: 10),
+        ],
+        if (selectedSubmissionStatus != 'Perlu Nilai') ...[
+        if (selectedSubject == 'Semua' || selectedSubject == 'IPAS')
         const _CompletedAssignmentCard(
           subject: 'IPAS',
           title: 'Laporan Pengamatan Siklus Air & Lingkungan Tamantirto',
           progress: '21/21 Terkumpul',
         ),
         const SizedBox(height: 10),
+        if (selectedSubject == 'Semua' || selectedSubject == 'Matematika')
         const _CompletedAssignmentCard(
           subject: 'Matematika',
           title: 'Latihan Pecahan Campuran',
           progress: '21/21 Terkumpul',
         ),
+        ],
       ],
     ],
   );
@@ -254,22 +290,27 @@ class _TabButton extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip(this.label, {this.active = false});
+  const _FilterChip(this.label, {this.active = false, required this.onTap});
   final String label;
   final bool active;
+  final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: active ? _green : Colors.white,
+  Widget build(BuildContext context) => Material(
+    color: active ? _green : Colors.white,
+    borderRadius: BorderRadius.circular(999),
+    child: InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        color: active ? Colors.white : _muted,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.white : _muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     ),
   );
@@ -351,9 +392,14 @@ class _MaterialCard extends StatelessWidget {
 }
 
 class _SubmissionMetrics extends StatelessWidget {
-  const _SubmissionMetrics();
+  const _SubmissionMetrics({
+    required this.selectedStatus,
+    required this.onStatusSelected,
+  });
+  final String selectedStatus;
+  final ValueChanged<String> onStatusSelected;
   @override
-  Widget build(BuildContext context) => const Row(
+  Widget build(BuildContext context) => Row(
     children: [
       Expanded(
         child: _MetricCard(
@@ -363,6 +409,8 @@ class _SubmissionMetrics extends StatelessWidget {
           note: '85% Respon',
           color: _ink,
           icon: Icons.inbox,
+          active: selectedStatus == 'Terkumpul',
+          onTap: () => onStatusSelected('Terkumpul'),
         ),
       ),
       SizedBox(width: 8),
@@ -375,6 +423,8 @@ class _SubmissionMetrics extends StatelessWidget {
           color: Color(0xFF855300),
           icon: Icons.pending_actions,
           background: Color(0xFFFEF3C7),
+          active: selectedStatus == 'Perlu Nilai',
+          onTap: () => onStatusSelected('Perlu Nilai'),
         ),
       ),
       SizedBox(width: 8),
@@ -386,6 +436,8 @@ class _SubmissionMetrics extends StatelessWidget {
           note: 'Tuntas Dinilai',
           color: _green,
           icon: Icons.check_circle,
+          active: selectedStatus == 'Selesai',
+          onTap: () => onStatusSelected('Selesai'),
         ),
       ),
     ],
@@ -401,18 +453,29 @@ class _MetricCard extends StatelessWidget {
     required this.color,
     required this.icon,
     this.background = Colors.white,
+    this.active = false,
+    required this.onTap,
   });
   final String title, value, suffix, note;
   final Color color;
   final IconData icon;
   final Color background;
+  final bool active;
+  final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => Material(
+    color: background,
+    borderRadius: BorderRadius.circular(12),
+    child: InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Container(
     height: 104,
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
-      color: background,
+      color: active ? const Color(0xFFE8F5EE) : background,
       borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: active ? _green : Colors.transparent, width: 1.5),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,7 +527,7 @@ class _MetricCard extends StatelessWidget {
         ),
       ],
     ),
-  );
+  )));
 }
 
 class _SubmissionAssignmentCard extends StatelessWidget {
